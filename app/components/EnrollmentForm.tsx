@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,28 +59,52 @@ function getParentField(parent: any, entityId: string, name: string) {
 }
 
 export default function EnrollmentForm({ record }: EnrollmentFormProps) {
-    const { register, handleSubmit, reset, setValue } = useForm<EnrollmentFormData>();
+    const { control, register, handleSubmit, reset, setValue, watch, getValues } = useForm<EnrollmentFormData>();
     const [submitted, setSubmitted] = useState(false);
     const sigCanvas = useRef<SignatureCanvas>(null);
+
+    const drawDefaultSignature = (text: string) => {
+        const canvas = sigCanvas.current?.getCanvas();
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // clear before drawing
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "#555"; // gray placeholder color
+        ctx.textAlign = "center";
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    };
 
     useEffect(() => {
         if (record) {
             const student = record.Data.find((d: any) => d.EntityId === "fullname");
             const dob = record.Data.find((d: any) => d.EntityId === "dob");
             const gender = record.Data.find((d: any) => d.EntityId === "gender");
+
             const grade = record.Data.find((d: any) => d.EntityId === "custom-select:63e574d4c66dc");
             const parent = record.Data.filter((d: any) => d.EntityId === "parent");
             const parent1 = parent[0];
             const parent2 = parent[1];
             const emergency = record.Data.find((d: any) => d.EntityId === "emergency-contact");
             const pickup = record.Data.find((d: any) => d.EntityId === "emergency-contact");
+            const parentName =
+                `${getParentField(parent1, "fullname", "FirstName")} ${getParentField(parent1, "fullname", "LastName")}`.trim();
+
+            if (parentName) {
+                drawDefaultSignature(parentName);
+                // store it as default signature value in the form
+                const dataUrl = sigCanvas.current?.getCanvas().toDataURL("image/png");
+                if (dataUrl) setValue("signature", dataUrl);
+            }
 
             reset({
                 firstName: student?.Value?.find((v: any) => v.Name === "FirstName")?.Value || "",
                 middleName: student?.Value?.find((v: any) => v.Name === "MiddleName")?.Value || "",
                 lastName: student?.Value?.find((v: any) => v.Name === "LastName")?.Value || "",
                 dob: dob?.Value?.find((v: any) => v.Name === "DOB")?.Value || "",
-                gender: gender?.Value?.find((v: any) => v.Name === "Gender")?.Value || "",
+                gender: gender?.Value?.find((v: any) => v.Name === "Gender")?.Value === 3 ? "Female" : "Male",
                 grade: grade?.Value?.find((v: any) => v.Name === "CustomSelect")?.Value || "",
                 parent1First: getParentField(parent1, "fullname", "FirstName") || "",
                 parent1Last: getParentField(parent1, "fullname", "LastName") || "",
@@ -93,17 +117,20 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
 
                 address: getParentField(parent1, "address", "Address") || "",
                 city: getParentField(parent1, "address", "City") || "",
-                state: getParentField(parent1, "address", "State") || "",
+                //state: getParentField(parent1, "address", "State") || "",
+                state: 'California',
                 zip: getParentField(parent1, "address", "Zip") || "",
 
                 emergencyFirst: emergency?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ")[0] || "",
                 emergencyLast: emergency?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ").slice(1).join(" ") || "",
-                emergencyRelation: emergency?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",
+                //emergencyRelation: emergency?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",.
+                emergencyRelation: 'Parent',
                 emergencyPhone: emergency?.Value?.find((v: any) => v.Name === "PhoneNumberPrimary")?.Value || "",
 
                 pickupFirst: pickup?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ")[0] || "",
                 pickupLast: pickup?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ").slice(1).join(" ") || "",
-                pickupRelation: pickup?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",
+                //pickupRelation: pickup?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",
+                pickupRelation: 'Parent',
                 pickupPhone: pickup?.Value?.find((v: any) => v.Name === "PhoneNumberPrimary")?.Value || "",
             });
         }
@@ -111,7 +138,17 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
 
     const clearSignature = () => {
         sigCanvas.current?.clear();
-        setValue("signature", "");
+
+        const parentName = `${getParentField(record?.Data.find((d: any) => d.EntityId === "parent"), "fullname", "FirstName")} ${getParentField(record?.Data.find((d: any) => d.EntityId === "parent"), "fullname", "LastName")
+            }`.trim();
+
+        if (parentName) {
+            drawDefaultSignature(parentName);
+            const dataUrl = sigCanvas.current?.getCanvas().toDataURL("image/png");
+            if (dataUrl) setValue("signature", dataUrl);
+        } else {
+            setValue("signature", "");
+        }
     };
 
     const saveSignature = () => {
@@ -210,16 +247,26 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
                 <Label className="block mb-2">
                     Student #1 Gender <span className="text-red-600">*</span>
                 </Label>
-                <RadioGroup className="flex flex-row gap-8" {...register("gender")}>
-                    <label className="flex items-center gap-2">
-                        <RadioGroupItem value="Male" id="male" />
-                        <span>Male</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                        <RadioGroupItem value="Female" id="female" />
-                        <span>Female</span>
-                    </label>
-                </RadioGroup>
+                <Controller
+                    name="gender"
+                    control={control}
+                    render={({ field }) => (
+                        <RadioGroup
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            className="flex flex-row gap-4"
+                        >
+                            <label className="flex items-center gap-2">
+                                <RadioGroupItem value="Male" id="male" />
+                                <span>Male</span>
+                            </label>
+                            <label className="flex items-center gap-2">
+                                <RadioGroupItem value="Female" id="female" />
+                                <span>Female</span>
+                            </label>
+                        </RadioGroup>
+                    )}
+                />
             </div>
 
             {/* Grade for 2023 - 2024 Academic Year */}
@@ -466,7 +513,7 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
                         Monday (Entrepreneurship Days)
                     </label>
                     <label className="flex items-center gap-2">
-                        <input type="checkbox" value="Tue-Wed-Thu" {...register("days")} />
+                        <input type="checkbox" value="Tue-Wed-Thu" {...register("days")} checked />
                         Tuesday + Wednesday + Thursday (Core Classes)
                     </label>
                     <label className="flex items-center gap-2">
@@ -490,7 +537,7 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
                 </div>
                 <RadioGroup className="flex flex-col gap-2" {...register("paymentPlan")}>
                     <label className="flex items-center gap-2">
-                        <RadioGroupItem value="A" id="planA" />
+                        <RadioGroupItem value="A" id="planA" checked />
                         <span>Option A: Payment in full in one invoice upon enrollment</span>
                     </label>
                     <label className="flex items-center gap-2">
@@ -538,9 +585,9 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
                 <Label className="block mb-2">
                     Custody Agreement<span className="text-red-600">*</span>
                 </Label>
-                <select {...register("custody")} className="border p-2 rounded w-full">
-                    <option value="">No</option>
-                    <option value="Yes">Yes</option>
+                <select defaultValue="True" {...register("custody")} className="border p-2 rounded w-full">
+                    <option value="False">No</option>
+                    <option value="True">Yes</option>
                 </select>
                 <div className="text-xs text-gray-400 mt-1">
                     Are there any pertinent issues regarding custody that we should be aware of for pick-ups and drop-offs?
