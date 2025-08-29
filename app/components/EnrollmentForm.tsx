@@ -71,9 +71,12 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
         if (!ctx) return;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height); // clear before drawing
-        ctx.font = "20px Arial";
+        
+        const fontSize = Math.max(14, Math.floor(canvas.width / 20));
+        ctx.font = `${fontSize}px Arial`;
         ctx.fillStyle = "#555"; // gray placeholder color
         ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
     };
 
