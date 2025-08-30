@@ -132,8 +132,8 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
 
                 pickupFirst: pickup?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ")[0] || "",
                 pickupLast: pickup?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ").slice(1).join(" ") || "",
-                //pickupRelation: pickup?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",
-                pickupRelation: 'Parent',
+                pickupRelation: pickup?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",
+                //pickupRelation: 'Parent',
                 pickupPhone: pickup?.Value?.find((v: any) => v.Name === "PhoneNumberPrimary")?.Value || "",
             });
         }
