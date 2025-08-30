@@ -126,8 +126,8 @@ export default function EnrollmentForm({ record }: EnrollmentFormProps) {
 
                 emergencyFirst: emergency?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ")[0] || "",
                 emergencyLast: emergency?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ").slice(1).join(" ") || "",
-                //emergencyRelation: emergency?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",.
-                emergencyRelation: 'Parent',
+                emergencyRelation: emergency?.Value?.find((v: any) => v.Name === "Relationship")?.Value || "",
+                //emergencyRelation: 'Parent',
                 emergencyPhone: emergency?.Value?.find((v: any) => v.Name === "PhoneNumberPrimary")?.Value || "",
 
                 pickupFirst: pickup?.Value?.find((v: any) => v.Name === "Name")?.Value?.split(" ")[0] || "",
